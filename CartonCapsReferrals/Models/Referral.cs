@@ -8,7 +8,7 @@ namespace CartonCapsReferrals.Api.Models
 
         public int ReferrerUserId { get; set; }
 
-        public int RefereeUserId { get; set; }
+        public int? RefereeUserId { get; set; }
 
         public string RefereeName { get; set; }
 
@@ -20,6 +20,6 @@ namespace CartonCapsReferrals.Api.Models
 
         public DateTime? ModifiedDt { get; set; }
 
-        public ReferralLink ReferralLink { get; set; }
+        public required ReferralLink ReferralLink { get; set; }
     }
 }
