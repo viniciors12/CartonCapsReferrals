@@ -29,73 +29,24 @@ namespace CartonCapsReferrals.Api.Services
             _store = store;
             _logger = logger;
         }
-        public async Task<Referral> GenerateReferralLink(Channel channel) 
+        public async Task<ReferralLink> GenerateReferralLink(Channel channel)
         {
-            var user = await _userService.GetAuthenticatedUserAsync() ?? throw new Exception("User not found");
+            var user = await GetAuthenticatedUserOrThrow();
 
             _logger.LogInformation(
-                "Creating short link for user {UserId}, channel {Channel}",
+                "Generating referral link for user {UserId}, channel {Channel}",
                 user.UserId,
                 channel
             );
 
-            var deepLinkUrl = $"app://cartoncaps/referralOnboarding?referral_code={user.ReferralCode}";
-            var request = new
+            var existingReferral = GetPendingReferral(user.UserId);
+
+            if (existingReferral != null)
             {
-                originalURL = deepLinkUrl,
-                domain = "cartoncaps.short.gy",
-            };
-
-            var json = JsonSerializer.Serialize(request);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.PostAsync(_options.ApiUrl, content);
-            if (!response.IsSuccessStatusCode) 
-            { 
-                var errorBody = await response.Content.ReadAsStringAsync();
-                _logger.LogError(
-                    "Short.io error for user {UserId}. Status: {StatusCode}. Body: {ErrorBody}",
-                    user.UserId,
-                    response.StatusCode,
-                    errorBody
-                );
-                throw new BadRequestException($"Vendor error: {response.StatusCode} - {errorBody}"); 
+                return UpdateExistingReferral(existingReferral, channel);
             }
-            response.EnsureSuccessStatusCode();
 
-            var responseBody = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(responseBody);
-
-            if (!doc.RootElement.TryGetProperty("shortURL", out var shortUrlElement))
-            {
-                throw new NotFoundException("Vendor response missing shortURL");
-            }
-            var shortLink = shortUrlElement.GetString();
-
-            var referral = new Referral
-            { 
-                ReferralId = Guid.NewGuid(),
-                ReferrerUserId = user.UserId,
-                Status = ReferralStatus.Pending, 
-                ReferralCode = user.ReferralCode, 
-                CreatedDt = DateTime.UtcNow, 
-                ModifiedDt = DateTime.UtcNow, 
-                ReferralLink = new ReferralLink 
-                {
-                    ReferralLinkId = Guid.NewGuid(),
-                    Channel = channel,
-                    DeepLinkUrl = deepLinkUrl,
-                    ShortLinkUrl = shortLink,
-                    ExpirationDt = DateTime.UtcNow.AddDays(30)
-                }
-            };
-            _store.Add(referral);
-            _logger.LogInformation(
-                "Referral created. ReferralId: {ReferralId}, ReferrerUserId: {UserId}",
-                referral.ReferralId,
-                referral.ReferrerUserId
-            );
-            return referral;
+            return await CreateNewReferralAsync(user, channel);
         }
 
         public Task<IEnumerable<Referral>> GetUserReferralsAsync(int userId)
@@ -114,10 +65,7 @@ namespace CartonCapsReferrals.Api.Services
             if (referral == null)
                 throw new NotFoundException("Referral not found");
 
-            if (DateTime.UtcNow > referral.ReferralLink.ExpirationDt)
-                throw new BadRequestException("Referral link expired");
-
-            var user = await _userService.GetAuthenticatedUserAsync();
+            var user = await GetAuthenticatedUserOrThrow();
             if (user == null)
                 throw new BadRequestException("User not found");
 
@@ -139,6 +87,108 @@ namespace CartonCapsReferrals.Api.Services
                 user.UserId
             );
             return referral; 
+        }
+
+        private async Task<User> GetAuthenticatedUserOrThrow()
+        {
+            return await _userService.GetAuthenticatedUserAsync()
+                ?? throw new BadRequestException("User not found");
+        }
+
+        private Referral? GetPendingReferral(int userId)
+        {
+            return _store.GetAll()
+                .FirstOrDefault(r =>
+                    r.ReferrerUserId == userId &&
+                    r.Status == ReferralStatus.Pending);
+        }
+
+        private ReferralLink UpdateExistingReferral(Referral referral, Channel channel)
+        {
+            referral.ReferralLink.Channel = channel;
+            referral.ModifiedDt = DateTime.UtcNow;
+
+            _store.Update(referral);
+
+            _logger.LogInformation(
+                "Reusing existing referral {ReferralId} with channel {Channel}",
+                referral.ReferralId,
+                channel
+            );
+
+            return referral.ReferralLink;
+        }
+
+        private async Task<ReferralLink> CreateNewReferralAsync(User user, Channel channel)
+        {
+            var deepLinkUrl = $"app://cartoncaps/referralOnboarding?referral_code={user.ReferralCode}";
+            var shortLink = await CreateShortLinkAsync(deepLinkUrl, user.UserId);
+
+            var referralLink = new ReferralLink
+            {
+                ReferralLinkId = Guid.NewGuid(),
+                Channel = channel,
+                DeepLinkUrl = deepLinkUrl,
+                ShortLinkUrl = shortLink
+            };
+
+            var referral = new Referral
+            {
+                ReferralId = Guid.NewGuid(),
+                ReferrerUserId = user.UserId,
+                Status = ReferralStatus.Pending,
+                ReferralCode = user.ReferralCode,
+                CreatedDt = DateTime.UtcNow,
+                ModifiedDt = DateTime.UtcNow,
+                ReferralLink = referralLink
+            };
+
+            _store.Add(referral);
+
+            _logger.LogInformation(
+                "New referral created. ReferralId: {ReferralId}, ReferrerUserId: {UserId}",
+                referral.ReferralId,
+                referral.ReferrerUserId
+            );
+
+            return referralLink;
+        }
+
+        private async Task<string> CreateShortLinkAsync(string deepLinkUrl, int userId)
+        {
+            var request = new
+            {
+                originalURL = deepLinkUrl,
+                domain = "cartoncaps.short.gy"
+            };
+
+            var json = JsonSerializer.Serialize(request);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(_options.ApiUrl, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+
+                _logger.LogError(
+                    "Short.io error for user {UserId}. Status: {StatusCode}. Body: {ErrorBody}",
+                    userId,
+                    response.StatusCode,
+                    errorBody
+                );
+
+                throw new BadRequestException(
+                    $"Vendor error: {response.StatusCode} - {errorBody}");
+            }
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(responseBody);
+
+            if (!doc.RootElement.TryGetProperty("shortURL", out var shortUrlElement))
+                throw new NotFoundException("Vendor response missing shortURL");
+
+            return shortUrlElement.GetString()!;
         }
     }
 }

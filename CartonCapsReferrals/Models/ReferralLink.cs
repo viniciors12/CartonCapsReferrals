@@ -11,7 +11,5 @@ namespace CartonCapsReferrals.Api.Models
         public string ShortLinkUrl { get; set; }
 
         public Channel Channel { get; set; }
-
-        public DateTime? ExpirationDt { get; set; }
     }
 }

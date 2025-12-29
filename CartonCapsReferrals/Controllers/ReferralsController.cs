@@ -2,7 +2,6 @@ using CartonCapsReferrals.Api.Enums;
 using CartonCapsReferrals.Api.Interfaces;
 using CartonCapsReferrals.Api.Models;
 using Microsoft.AspNetCore.Mvc;
-using System.Transactions;
 
 namespace CartonCapsReferrals.Controllers
 {
@@ -18,7 +17,7 @@ namespace CartonCapsReferrals.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ReferralLink>> CreateReferralLinkAsync(Channel channel)
+        public async Task<ActionResult<Referral>> CreateReferralLinkAsync(Channel channel)
         {
             var ReferralLink = await _referralService.GenerateReferralLink(channel);
 

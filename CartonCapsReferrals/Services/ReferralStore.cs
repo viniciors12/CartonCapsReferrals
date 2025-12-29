@@ -30,6 +30,16 @@ namespace CartonCapsReferrals.Api.Services
         public Referral? GetById(Guid referralId)
             => _referrals.FirstOrDefault(r => r.ReferralId == referralId);
 
+        public void Update(Referral referral)
+        {
+            lock (_lock)
+            {
+                var index = _referrals.FindIndex(r => r.ReferralId == referral.ReferralId);
+                if (index >= 0)
+                    _referrals[index] = referral;
+            }
+        }
+
         public void Add(Referral referral)
         {
             lock (_lock)

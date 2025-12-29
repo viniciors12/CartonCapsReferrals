@@ -6,6 +6,7 @@ namespace CartonCapsReferrals.Api.Interfaces
     {
         IReadOnlyCollection<Referral> GetAll();
         void Add(Referral referral);
+        void Update(Referral referral);
         Referral? GetById(Guid referralId);
     }
 }

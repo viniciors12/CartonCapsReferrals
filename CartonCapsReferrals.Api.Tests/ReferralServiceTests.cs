@@ -1,6 +1,6 @@
 ﻿namespace CartonCapsReferrals.Api.Tests
 {
-    public class UnitTest1
+    public class ReferralServiceTests
     {
         [Fact]
         public void Test1()
