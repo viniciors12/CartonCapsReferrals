@@ -20,6 +20,6 @@ namespace CartonCapsReferrals.Api.Models
 
         public DateTime? ModifiedDt { get; set; }
 
-        public required ReferralLink ReferralLink { get; set; }
+        public ReferralLink ReferralLink { get; set; }
     }
 }
