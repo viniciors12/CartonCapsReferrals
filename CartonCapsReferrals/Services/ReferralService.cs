@@ -29,7 +29,7 @@ namespace CartonCapsReferrals.Api.Services
             _store = store;
             _logger = logger;
         }
-        public async Task<ReferralLink> GenerateReferralLink(Channel channel)
+        public async Task<Referral> GenerateReferralLink(Channel channel)
         {
             var user = await GetAuthenticatedUserOrThrow();
 
@@ -103,7 +103,7 @@ namespace CartonCapsReferrals.Api.Services
                     r.Status == ReferralStatus.Pending);
         }
 
-        private ReferralLink UpdateExistingReferral(Referral referral, Channel channel)
+        private Referral UpdateExistingReferral(Referral referral, Channel channel)
         {
             referral.ReferralLink.Channel = channel;
             referral.ModifiedDt = DateTime.UtcNow;
@@ -116,10 +116,10 @@ namespace CartonCapsReferrals.Api.Services
                 channel
             );
 
-            return referral.ReferralLink;
+            return referral;
         }
 
-        private async Task<ReferralLink> CreateNewReferralAsync(User user, Channel channel)
+        private async Task<Referral> CreateNewReferralAsync(User user, Channel channel)
         {
             var deepLinkUrl = $"app://cartoncaps/referralOnboarding?referral_code={user.ReferralCode}";
             var shortLink = await CreateShortLinkAsync(deepLinkUrl, user.UserId);
@@ -151,7 +151,7 @@ namespace CartonCapsReferrals.Api.Services
                 referral.ReferrerUserId
             );
 
-            return referralLink;
+            return referral;
         }
 
         private async Task<string> CreateShortLinkAsync(string deepLinkUrl, int userId)
