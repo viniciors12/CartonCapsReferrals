@@ -28,7 +28,7 @@ namespace CartonCapsReferrals.Api.Middleware
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unhandled exception");
-                await WriteError(context, 500, "An unexpected error occurred");
+                await WriteError(context, 500, $"An unexpected error occurred, {ex.Message} {ex.InnerException}");
             }
         }
 
