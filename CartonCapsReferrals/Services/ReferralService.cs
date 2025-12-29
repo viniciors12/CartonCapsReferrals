@@ -72,7 +72,7 @@ namespace CartonCapsReferrals.Api.Services
                 }
             };
             _store.Add(referral);
-
+                
             return referral;
         }
 

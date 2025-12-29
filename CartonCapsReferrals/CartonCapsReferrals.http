@@ -1,0 +1,6 @@
+@CartonCapsReferrals_HostAddress = http://localhost:5149
+
+GET {{CartonCapsReferrals_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
