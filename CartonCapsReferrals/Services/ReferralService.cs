@@ -14,18 +14,30 @@ namespace CartonCapsReferrals.Api.Services
         private readonly ShortIoOptions _options;
         private readonly IUserService _userService;
         private readonly IReferralStore _store;
+        private readonly ILogger<ReferralService> _logger;
 
-        public ReferralService(HttpClient httpClient, IOptions<ShortIoOptions> options, IUserService userService, IReferralStore store)
+        public ReferralService(HttpClient httpClient,
+            IOptions<ShortIoOptions> options,
+            IUserService userService,
+            IReferralStore store,
+            ILogger<ReferralService> logger)
         {
             _httpClient = httpClient;
             _options = options.Value;
             _httpClient.DefaultRequestHeaders.Add("Authorization", _options.ApiKey);
             _userService = userService;
             _store = store;
+            _logger = logger;
         }
         public async Task<Referral> GenerateReferralLink(Channel channel) 
         {
             var user = await _userService.GetAuthenticatedUserAsync() ?? throw new Exception("User not found");
+
+            _logger.LogInformation(
+                "Creating short link for user {UserId}, channel {Channel}",
+                user.UserId,
+                channel
+            );
 
             var deepLinkUrl = $"app://cartoncaps/referralOnboarding?referral_code={user.ReferralCode}";
             var request = new
@@ -40,7 +52,13 @@ namespace CartonCapsReferrals.Api.Services
             var response = await _httpClient.PostAsync(_options.ApiUrl, content);
             if (!response.IsSuccessStatusCode) 
             { 
-                var errorBody = await response.Content.ReadAsStringAsync(); 
+                var errorBody = await response.Content.ReadAsStringAsync();
+                _logger.LogError(
+                    "Short.io error for user {UserId}. Status: {StatusCode}. Body: {ErrorBody}",
+                    user.UserId,
+                    response.StatusCode,
+                    errorBody
+                );
                 throw new BadRequestException($"Vendor error: {response.StatusCode} - {errorBody}"); 
             }
             response.EnsureSuccessStatusCode();
@@ -72,7 +90,11 @@ namespace CartonCapsReferrals.Api.Services
                 }
             };
             _store.Add(referral);
-                
+            _logger.LogInformation(
+                "Referral created. ReferralId: {ReferralId}, ReferrerUserId: {UserId}",
+                referral.ReferralId,
+                referral.ReferrerUserId
+            );
             return referral;
         }
 
@@ -85,6 +107,10 @@ namespace CartonCapsReferrals.Api.Services
         public async Task<Referral> ResolveReferralAsync(Guid referralId, string refereeName) 
         {
             var referral = _store.GetById(referralId);
+            _logger.LogInformation(
+                "Attempting to resolve referral {ReferralId}",
+                referralId);
+
             if (referral == null)
                 throw new NotFoundException("Referral not found");
 
@@ -96,12 +122,22 @@ namespace CartonCapsReferrals.Api.Services
                 throw new BadRequestException("User not found");
 
             if (referral.ReferrerUserId == user.UserId)
+            {
+                _logger.LogWarning(
+                "User attempted to reuse a referral. UserId: {UserId}",
+                user.UserId);
                 throw new ForbiddenException("Self-referrals are not allowed");
+            }
 
             referral.RefereeUserId = user.UserId;
             referral.RefereeName = refereeName;
             referral.Status = ReferralStatus.Complete; 
-            referral.ModifiedDt = DateTime.UtcNow; 
+            referral.ModifiedDt = DateTime.UtcNow;
+            _logger.LogInformation(
+                "Referral resolved. ReferralId: {ReferralId}, RefereeUserId: {UserId}",
+                referral.ReferralId,
+                user.UserId
+            );
             return referral; 
         }
     }

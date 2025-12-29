@@ -11,7 +11,7 @@ namespace CartonCapsReferrals.Controllers
     public class ReferralsController : ControllerBase
     {
         private readonly ILogger<ReferralsController> _logger;
-        private IReferralService _referralService;
+        private readonly IReferralService _referralService;
 
         public ReferralsController(ILogger<ReferralsController> logger, IReferralService referralService)
         {
