@@ -10,12 +10,10 @@ namespace CartonCapsReferrals.Controllers
     [Route("Referrals/")]
     public class ReferralsController : ControllerBase
     {
-        private readonly ILogger<ReferralsController> _logger;
         private readonly IReferralService _referralService;
 
-        public ReferralsController(ILogger<ReferralsController> logger, IReferralService referralService)
+        public ReferralsController(IReferralService referralService)
         {
-            _logger = logger;
             _referralService = referralService;
         }
 
