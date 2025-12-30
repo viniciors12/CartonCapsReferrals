@@ -16,6 +16,10 @@ namespace CartonCapsReferrals.Controllers
             _referralService = referralService;
         }
 
+        /// <summary>
+        ///  Generates a referral link for the authenticated user using their existing referral code. 
+        ///  If the user already has an active pending referral, the same referral is reused.
+        /// </summary>
         [HttpPost]
         [ProducesResponseType(typeof(Referral), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -27,6 +31,9 @@ namespace CartonCapsReferrals.Controllers
             return Ok(ReferralLink);
         }
 
+        /// <summary>
+        /// Returns all referrals created by the one user.
+        /// </summary>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Referral>>> GetUserReferralsAsync(int userId)
         {
@@ -35,6 +42,9 @@ namespace CartonCapsReferrals.Controllers
             return Ok(referrals);
         }
 
+        /// <summary>
+        /// Resolves a referral when a new user completes onboarding via a referral link. Abuse prevention rules apply.
+        /// </summary>
         [HttpPost("Resolve")]
         [ProducesResponseType(typeof(Referral), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
