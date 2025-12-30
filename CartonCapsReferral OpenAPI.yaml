@@ -1,0 +1,175 @@
+openapi: 3.0.3
+info:
+  title: CartonCapsReferrals API
+  description: |
+    API contract for the referral feature.  
+    This API allows existing users to generate referral links, track referral status,
+    and resolve referrals during onboarding of new users.
+
+    Authentication is assumed to be handled by the existing platform.
+  version: 1.0.0
+
+servers:
+  - url: https://api.cartoncaps.com
+
+tags:
+  - name: Referrals
+    description: Referral management endpoints
+
+paths:
+  /referrals:
+    post:
+      tags: [Referrals]
+      summary: Create or retrieve a referral link
+      description: |
+        Generates a referral link for the authenticated user using their existing referral code.
+        If the user already has an active pending referral, the same referral is reused.
+      parameters:
+        - name: channel
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Channel'
+      responses:
+        '200':
+          description: Referral link generated or reused successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Referral'
+        '400':
+          description: Bad request (user not authenticated or vendor error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Vendor response missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags: [Referrals]
+      summary: Get referrals for the authenticated user
+      description: |
+        Returns all referrals created by the authenticated user.
+      responses:
+        '200':
+          description: List of referrals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Referral'
+
+  /referrals/resolve:
+    post:
+      tags: [Referrals]
+      summary: Resolve a referral
+      description: |
+        Resolves a referral when a new user completes onboarding via a referral link.
+        Abuse prevention rules apply.
+      parameters:
+        - name: referralId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: refereeName
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Referral resolved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Referral'
+        '400':
+          description: User already referred or Referral already resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Self-referrals are not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Referral not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Referral:
+      type: object
+      properties:
+        referralId:
+          type: string
+          format: uuid
+        referrerUserId:
+          type: integer
+        refereeUserId:
+          type: integer
+          nullable: true
+        refereeName:
+          type: string
+        referralCode:
+          type: string
+        status:
+          $ref: '#/components/schemas/ReferralStatus'
+        createdDt:
+          type: string
+          format: date-time
+        modifiedDt:
+          type: string
+          format: date-time
+        referralLink:
+          $ref: '#/components/schemas/ReferralLink'
+
+    ReferralLink:
+      type: object
+      properties:
+        referralLinkId:
+          type: string
+          format: uuid
+        channel:
+          $ref: '#/components/schemas/Channel'
+        deepLinkUrl:
+          type: string
+          example: app://cartoncaps/referralOnboarding?referral_code=ABC123
+        shortLinkUrl:
+          type: string
+          example: https://cartoncaps.short.gy/xyz123
+
+    ReferralStatus:
+      type: string
+      enum:
+        - Pending
+        - Complete
+
+    Channel:
+      type: string
+      enum:
+        - Email
+        - SMS
+        - Share
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        status:
+          type: integer
