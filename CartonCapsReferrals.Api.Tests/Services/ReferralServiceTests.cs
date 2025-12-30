@@ -167,9 +167,19 @@ namespace CartonCapsReferrals.Api.Tests.Services
         }
 
         [Fact]
-        public async Task GetUserReferralsAsync_ShouldReturnOnlyReferralsForGivenUser()
+        public async Task GetUserReferralsAsync_ShouldReturnOnlyReferralsForAuthenticatedUser()
         {
             // Arrange
+            var user = new User
+            {
+                UserId = 1,
+                ReferralCode = "ABC123"
+            };
+
+            _userService
+                .Setup(u => u.GetAuthenticatedUserAsync())
+                .ReturnsAsync(user);
+
             var referrals = new List<Referral>
             {
                 new Referral { ReferrerUserId = 1 },
@@ -184,7 +194,7 @@ namespace CartonCapsReferrals.Api.Tests.Services
             var service = CreateService(new HttpResponseMessage(HttpStatusCode.OK));
 
             // Act
-            var result = await service.GetUserReferralsAsync(1);
+            var result = await service.GetUserReferralsAsync();
 
             // Assert
             Assert.Equal(2, result.Count());
@@ -204,9 +214,29 @@ namespace CartonCapsReferrals.Api.Tests.Services
                 Status = ReferralStatus.Pending
             };
 
+            var referrals = new List<Referral>
+            {
+                new Referral 
+                {
+                    ReferralId = Guid.NewGuid(),
+                    ReferrerUserId = 1,
+                    Status = ReferralStatus.Pending
+                },
+                new Referral
+                {
+                    ReferralId = Guid.NewGuid(),
+                    ReferrerUserId = 2,
+                    Status = ReferralStatus.Pending
+                }
+            };
+
             _store
                 .Setup(s => s.GetById(referralId))
                 .Returns(referral);
+
+            _store
+                .Setup(s => s.GetAll())
+                .Returns(referrals);
 
             _userService
                 .Setup(u => u.GetAuthenticatedUserAsync())
@@ -266,6 +296,69 @@ namespace CartonCapsReferrals.Api.Tests.Services
 
             // Act & Assert
             await Assert.ThrowsAsync<ForbiddenException>(() =>
+                service.ResolveReferralAsync(referralId, "John"));
+        }
+
+        [Fact]
+        public async Task ResolveReferralAsync_ShouldThrow_WhenReferralAlreadyResolved()
+        {
+            // Arrange
+            var referralId = Guid.NewGuid();
+
+            var referral = new Referral
+            {
+                ReferralId = referralId,
+                ReferrerUserId = 1,
+                Status = ReferralStatus.Complete
+            };
+
+            _store
+                .Setup(s => s.GetById(referralId))
+                .Returns(referral);
+
+            var service = CreateService(new HttpResponseMessage(HttpStatusCode.OK));
+
+            // Act & Assert
+            await Assert.ThrowsAsync<BadRequestException>(() =>
+                service.ResolveReferralAsync(referralId, "John"));
+        }
+
+        [Fact]
+        public async Task ResolveReferralAsync_ShouldThrow_WhenUserAlreadyReferred()
+        {
+            // Arrange
+            var referralId = Guid.NewGuid();
+
+            var referralToResolve = new Referral
+            {
+                ReferralId = referralId,
+                ReferrerUserId = 1,
+                Status = ReferralStatus.Pending
+            };
+
+            var existingReferral = new Referral
+            {
+                ReferralId = Guid.NewGuid(),
+                RefereeUserId = 2,
+                Status = ReferralStatus.Complete
+            };
+
+            _store
+                .Setup(s => s.GetById(referralId))
+                .Returns(referralToResolve);
+
+            _store
+                .Setup(s => s.GetAll())
+                .Returns(new[] { existingReferral });
+
+            _userService
+                .Setup(u => u.GetAuthenticatedUserAsync())
+                .ReturnsAsync(new User { UserId = 2 });
+
+            var service = CreateService(new HttpResponseMessage(HttpStatusCode.OK));
+
+            // Act & Assert
+            await Assert.ThrowsAsync<BadRequestException>(() =>
                 service.ResolveReferralAsync(referralId, "John"));
         }
 
