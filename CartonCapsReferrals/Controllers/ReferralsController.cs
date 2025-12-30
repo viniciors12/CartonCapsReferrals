@@ -17,6 +17,9 @@ namespace CartonCapsReferrals.Controllers
         }
 
         [HttpPost]
+        [ProducesResponseType(typeof(Referral), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Referral>> CreateReferralLinkAsync(Channel channel)
         {
             var ReferralLink = await _referralService.GenerateReferralLink(channel);
@@ -33,6 +36,10 @@ namespace CartonCapsReferrals.Controllers
         }
 
         [HttpPost("Resolve")]
+        [ProducesResponseType(typeof(Referral), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Referral>>> ResolveReferralAsync(Guid referralId, string refereeName)
         {
             var referrals = await _referralService.ResolveReferralAsync(referralId, refereeName);

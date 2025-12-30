@@ -110,7 +110,7 @@ namespace CartonCapsReferrals.Api.Tests.Services
             var service = CreateService(new HttpResponseMessage(HttpStatusCode.OK));
 
             // Act & Assert
-            await Assert.ThrowsAsync<BadRequestException>(() =>
+            await Assert.ThrowsAsync<NotFoundException>(() =>
                 service.GenerateReferralLink(Channel.Email));
         }
 

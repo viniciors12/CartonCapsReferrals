@@ -102,7 +102,7 @@ namespace CartonCapsReferrals.Api.Services
         private async Task<User> GetAuthenticatedUserOrThrow()
         {
             return await _userService.GetAuthenticatedUserAsync()
-                ?? throw new BadRequestException("User not found");
+                ?? throw new NotFoundException("User not found");
         }
 
         private Referral? GetPendingReferral(int userId)
