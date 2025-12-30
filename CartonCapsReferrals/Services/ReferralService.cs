@@ -49,10 +49,9 @@ namespace CartonCapsReferrals.Api.Services
             return await CreateNewReferralAsync(user, channel);
         }
 
-        public async Task<IEnumerable<Referral>> GetUserReferralsAsync()
+        public async Task<IEnumerable<Referral>> GetUserReferralsAsync(int userId)
         {
-            var user = await GetAuthenticatedUserOrThrow();
-            var referrals = _store.GetAll().Where(r => r.ReferrerUserId == user.UserId); 
+            var referrals = _store.GetAll().Where(r => r.ReferrerUserId == userId); 
             return referrals;
         }
 

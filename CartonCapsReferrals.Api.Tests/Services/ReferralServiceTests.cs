@@ -194,7 +194,7 @@ namespace CartonCapsReferrals.Api.Tests.Services
             var service = CreateService(new HttpResponseMessage(HttpStatusCode.OK));
 
             // Act
-            var result = await service.GetUserReferralsAsync();
+            var result = await service.GetUserReferralsAsync(1);
 
             // Assert
             Assert.Equal(2, result.Count());

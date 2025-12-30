@@ -58,11 +58,11 @@ namespace CartonCapsReferrals.Api.Tests.Controllers
             };
 
             _referralServiceMock
-                .Setup(s => s.GetUserReferralsAsync())
+                .Setup(s => s.GetUserReferralsAsync(1))
                 .ReturnsAsync(referrals);
 
             // Act
-            var result = await _controller.GetUserReferralsAsync();
+            var result = await _controller.GetUserReferralsAsync(1);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result.Result);

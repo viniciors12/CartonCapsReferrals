@@ -25,9 +25,9 @@ namespace CartonCapsReferrals.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Referral>>> GetUserReferralsAsync()
+        public async Task<ActionResult<IEnumerable<Referral>>> GetUserReferralsAsync(int userId)
         {
-            var referrals = await _referralService.GetUserReferralsAsync();
+            var referrals = await _referralService.GetUserReferralsAsync(userId);
 
             return Ok(referrals);
         }

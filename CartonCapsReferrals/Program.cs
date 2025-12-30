@@ -2,6 +2,7 @@ using CartonCapsReferrals.Api;
 using CartonCapsReferrals.Api.Interfaces;
 using CartonCapsReferrals.Api.Middleware;
 using CartonCapsReferrals.Api.Services;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,7 +15,13 @@ builder.Services.Configure<ShortIoOptions>(builder.Configuration.GetSection("Sho
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddControllers();
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter());
+    });
 
 var app = builder.Build();
 
