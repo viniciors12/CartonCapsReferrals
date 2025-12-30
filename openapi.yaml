@@ -52,9 +52,15 @@ paths:
 
     get:
       tags: [Referrals]
-      summary: Get referrals for the authenticated user
+      summary: Get referrals for one user
       description: |
-        Returns all referrals created by the authenticated user.
+        Returns all referrals created by the one user.
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: int
       responses:
         "200":
           description: List of referrals
