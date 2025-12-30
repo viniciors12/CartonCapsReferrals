@@ -66,6 +66,9 @@ namespace CartonCapsReferrals.Api.Services
             if (referral == null)
                 throw new NotFoundException("Referral not found");
 
+            if (referral.Status == ReferralStatus.Complete)
+                throw new BadRequestException("Referral already resolved");
+
             var user = await GetAuthenticatedUserOrThrow();
             if (user == null)
                 throw new BadRequestException("User not found");
@@ -77,6 +80,13 @@ namespace CartonCapsReferrals.Api.Services
                 user.UserId);
                 throw new ForbiddenException("Self-referrals are not allowed");
             }
+
+            var alreadyReferred = _store
+                .GetAll()
+                .Any(r => r.RefereeUserId == user.UserId);
+
+            if (alreadyReferred)
+                throw new BadRequestException("User already referred");
 
             referral.RefereeUserId = user.UserId;
             referral.RefereeName = refereeName;
