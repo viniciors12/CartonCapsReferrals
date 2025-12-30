@@ -29,26 +29,26 @@ paths:
           in: query
           required: true
           schema:
-            $ref: '#/components/schemas/Channel'
+            $ref: "#/components/schemas/Channel"
       responses:
-        '200':
+        "200":
           description: Referral link generated or reused successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Referral'
-        '400':
+                $ref: "#/components/schemas/Referral"
+        "400":
           description: Bad request (user not authenticated or vendor error)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Vendor response missing required fields
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
     get:
       tags: [Referrals]
@@ -56,14 +56,14 @@ paths:
       description: |
         Returns all referrals created by the authenticated user.
       responses:
-        '200':
+        "200":
           description: List of referrals
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Referral'
+                  $ref: "#/components/schemas/Referral"
 
   /referrals/resolve:
     post:
@@ -85,30 +85,30 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Referral resolved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Referral'
-        '400':
+                $ref: "#/components/schemas/Referral"
+        "400":
           description: User already referred or Referral already resolved
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: Self-referrals are not allowed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Referral not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
   schemas:
@@ -128,7 +128,7 @@ components:
         referralCode:
           type: string
         status:
-          $ref: '#/components/schemas/ReferralStatus'
+          $ref: "#/components/schemas/ReferralStatus"
         createdDt:
           type: string
           format: date-time
@@ -136,7 +136,7 @@ components:
           type: string
           format: date-time
         referralLink:
-          $ref: '#/components/schemas/ReferralLink'
+          $ref: "#/components/schemas/ReferralLink"
 
     ReferralLink:
       type: object
@@ -145,7 +145,7 @@ components:
           type: string
           format: uuid
         channel:
-          $ref: '#/components/schemas/Channel'
+          $ref: "#/components/schemas/Channel"
         deepLinkUrl:
           type: string
           example: app://cartoncaps/referralOnboarding?referral_code=ABC123
@@ -156,14 +156,15 @@ components:
     ReferralStatus:
       type: string
       enum:
-        - Pending
         - Complete
+        - Pending
+        - Canceled
 
     Channel:
       type: string
       enum:
+        - Text
         - Email
-        - SMS
         - Share
 
     ErrorResponse:
